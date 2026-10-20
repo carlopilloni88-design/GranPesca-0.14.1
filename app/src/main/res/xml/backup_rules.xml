@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- nel backup entra solo la copia interna della partita (senza foto): i dati del WebView restano fuori -->
+<full-backup-content>
+    <include domain="file" path="gp_mirror.json" />
+    <include domain="file" path="gp_mirror.prev.json" />
+    <include domain="file" path="gp_mirror_a.dat" />
+    <include domain="file" path="gp_mirror_b.dat" />
+</full-backup-content>

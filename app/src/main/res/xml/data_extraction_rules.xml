@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="gp_mirror.json" />
+        <include domain="file" path="gp_mirror.prev.json" />
+        <include domain="file" path="gp_mirror_a.dat" />
+        <include domain="file" path="gp_mirror_b.dat" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="gp_mirror.json" />
+        <include domain="file" path="gp_mirror.prev.json" />
+        <include domain="file" path="gp_mirror_a.dat" />
+        <include domain="file" path="gp_mirror_b.dat" />
+    </device-transfer>
+</data-extraction-rules>

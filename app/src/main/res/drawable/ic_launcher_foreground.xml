@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- pesce -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,54 C30,42 48,36 62,44 L76,36 L72,54 L76,72 L62,64 C48,72 30,66 30,54 Z" />
+    <!-- occhio -->
+    <path
+        android:fillColor="#0B6FA4"
+        android:pathData="M44,50 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <!-- amo -->
+    <path
+        android:strokeColor="#FFD23F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M54,18 L54,32 M54,32 L54,26" />
+</vector>
