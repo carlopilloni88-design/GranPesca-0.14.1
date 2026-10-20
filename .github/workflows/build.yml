@@ -1,0 +1,93 @@
+name: Build GranPesca
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Prepara Android SDK 36
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-36" "build-tools;36.0.0" "platform-tools" > /dev/null || true
+
+      - name: Trova il progetto (GranPesca.zip o cartella)
+        run: |
+          ls -la
+          if [ -f GranPesca.zip ]; then ZIP=GranPesca.zip; else ZIP=$(ls *.zip 2>/dev/null | head -n 1 || true); fi
+          if [ -n "$ZIP" ]; then
+            echo "Zip usato: $ZIP"
+            unzip -q -o "$ZIP" -d src
+            PROJ=$(dirname "$(find src -name settings.gradle.kts | head -n 1)")
+          else
+            PROJ=$(dirname "$(find . -name settings.gradle.kts -not -path './src/*' | head -n 1)")
+          fi
+          if [ ! -f "$PROJ/settings.gradle.kts" ]; then
+            echo "::error::Progetto non trovato: carica GranPesca.zip nella pagina principale del repository"
+            exit 1
+          fi
+          echo "Progetto: $PROJ"
+          grep -h "versionName" "$PROJ/app/build.gradle.kts" || true
+          echo "PROJ=$PROJ" >> "$GITHUB_ENV"
+
+      - name: Compila la versione di rilascio (AAB e APK per il Play Store) e la versione debug
+        run: gradle -p "$PROJ" assembleDebug bundleRelease assembleRelease --no-daemon --stacktrace
+
+      - name: Rinomina i file
+        run: |
+          cp "$(find "$PROJ" -path '*bundle/release*' -name '*.aab' | head -n 1)" GranPesca.aab
+          cp "$(find "$PROJ" -path '*apk/release*' -name '*.apk' | head -n 1)" GranPesca.apk
+          cp "$(find "$PROJ" -path '*apk/debug*' -name '*.apk' | head -n 1)" GranPesca-debug.apk
+          ls -la GranPesca.aab GranPesca.apk GranPesca-debug.apk
+
+      - name: Firma l'app bundle per il Play Store e controlla la firma
+        run: |
+          KS="$PROJ/app/granpesca.jks"
+          PW=$(grep '^GP_STORE_PASSWORD=' "$PROJ/gradle.properties" | cut -d= -f2-)
+          if jarsigner -verify GranPesca.aab 2>&1 | grep -q "jar verified"; then
+            echo "App bundle già firmato da Gradle"
+          else
+            echo "App bundle senza firma: lo firmo con la chiave granpesca"
+            jarsigner -keystore "$KS" -storepass "$PW" -keypass "$PW" -sigalg SHA256withRSA -digestalg SHA-256 GranPesca.aab granpesca
+          fi
+          jarsigner -verify GranPesca.aab | grep -q "jar verified" || { echo "::error::GranPesca.aab non risulta firmato"; exit 1; }
+          echo "Firma dell'app bundle:"
+          keytool -printcert -jarfile GranPesca.aab | grep -E "Owner|Proprietario|SHA256:" | head -3
+
+      - name: Salva AAB e APK come artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: GranPesca-0.14.1
+          path: |
+            GranPesca.aab
+            GranPesca.apk
+            GranPesca-debug.apk
+
+      - name: Pubblica nelle Releases
+        continue-on-error: true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: GranPesca 0.14.1 - build ${{ github.run_number }}
+          files: |
+            GranPesca.aab
+            GranPesca.apk
+            GranPesca-debug.apk
